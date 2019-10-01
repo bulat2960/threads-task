@@ -2,6 +2,12 @@
 
 Controller::Controller(int threadsNumber, QObject *parent) : QObject(parent)
 {
+    QString input("/home/bulat2960/dev/my-qt-projects/ThreadsTask/input.mp4");
+    Reader* reader = new Reader(input, 0);
+    reader->read();
+    data = reader->getData();
+    reader->deleteLater();
+
     for (int i = 0; i < threadsNumber; i++)
     {
         readerThreads.append(new QThread(this));
@@ -66,13 +72,7 @@ void Controller::createWriterThread()
 
     waitForReadersFinished();
 
-    QString input("/home/bulat2960/dev/my-qt-projects/ThreadsTask/input.mp4");
     QString output("/home/bulat2960/dev/my-qt-projects/ThreadsTask/output.mp4");
-
-    Reader* reader = new Reader(input, 0);
-    reader->read();
-    QByteArray data = reader->getData();
-    reader->deleteLater();
 
     Writer* w = new Writer(data, output);
 
@@ -136,6 +136,9 @@ void Controller::processNewReader()
 {
     QObject* sender = QObject::sender();
     Reader* readerObject = qobject_cast<Reader*>(sender);
+
+    readerObject->thread()->quit();
+    readerObject->thread()->wait(1000);
 
     qDebug() << "Ридер" << readerObject->getReaderNumber() << "завершил свою работу";
 

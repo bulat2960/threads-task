@@ -16,6 +16,8 @@ private:
     QList<QThread*> readerThreads;
     QQueue<Reader*> waitReaders;
 
+    QByteArray data;
+
     bool hasPermissionForRead;
 
     QThread* writerThread;
