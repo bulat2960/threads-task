@@ -23,8 +23,6 @@ void Controller::createReaderThread(Reader *r)
 
     if (readerThread != nullptr && hasPermissionForRead)
     {
-        qDebug() << "Для ридера" << r->getReaderNumber() << "найден поток!";
-
         r->moveToThread(readerThread);
 
         connect(readerThread, &QThread::started, r, &Reader::read);
@@ -120,7 +118,7 @@ void Controller::processWaitReaders()
 
         Reader* r = waitReaders.dequeue();
 
-        qDebug() << "Начинается работа ридера" << r->getReaderNumber();
+        qDebug() << "Читатель" << r->getReaderNumber() << "начинает чтение после завершения операции записи";
 
         r->moveToThread(readerThread);
 
@@ -140,13 +138,8 @@ void Controller::processNewReader()
     readerObject->thread()->quit();
     readerObject->thread()->wait(1000);
 
-    qDebug() << "Ридер" << readerObject->getReaderNumber() << "завершил свою работу";
-
-    readerObject->deleteLater();
-
     if (waitReaders.empty())
     {
-        qDebug() << "Список ожидания пуст";
         return;
     }
 
@@ -154,13 +147,11 @@ void Controller::processNewReader()
 
     if (readerThread == nullptr)
     {
-        qDebug() << "Нет свободных потоков";
         return;
     }
 
     if (!hasPermissionForRead)
     {
-        qDebug() << "Нет прав доступа на чтение";
         return;
     }
 
@@ -168,7 +159,10 @@ void Controller::processNewReader()
 
     Reader* r = waitReaders.dequeue();
 
-    qDebug() << "Начинается работа ридера" << r->getReaderNumber();
+    qDebug() << "Поток читателя" << readerObject->getReaderNumber()
+             << "передает управление читателю" << r->getReaderNumber();
+
+    readerObject->deleteLater();
 
     r->moveToThread(readerThread);
 

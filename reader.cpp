@@ -9,8 +9,6 @@ Reader::Reader(QString input, int readerNumber, QObject *parent) : QObject(paren
 
 void Reader::read()
 {
-    qDebug() << "Reader" << readerNumber << "starts to read!";
-
     QTime time;
     time.start();
 
@@ -26,7 +24,7 @@ void Reader::read()
         array += file->readAll();
     }
 
-    qDebug() << "Reader" << readerNumber << "time elapsed:" << time.elapsed() << "ms";
+    qDebug() << "Читатель" << readerNumber << "завершил свою работу. Время чтения:" << time.elapsed() << "мс";
 
     emit resultReady();
 }

@@ -16,9 +16,9 @@ int main(int argc, char *argv[])
     // https://www.youtube.com/watch?v=3JGaNOpSbmA
     QString input("/home/bulat2960/dev/my-qt-projects/ThreadsTask/input.mp4");
 
-    Controller* controller = new Controller(3);
+    Controller* controller = new Controller(4);
 
-    for (int i = 0; i < 100; i++)
+    for (int i = 0; i < 1000; i++)
     {
         Reader* reader = new Reader(input, i + 1);
         controller->createReaderThread(reader);

@@ -8,8 +8,6 @@ Writer::Writer(QByteArray array, QString output, QObject *parent) : QObject(pare
 
 void Writer::write()
 {
-    qDebug() << "Writer starts to write!";
-
     QTime time;
     time.start();
 
@@ -22,7 +20,7 @@ void Writer::write()
 
     file->close();
 
-    qDebug() << "Writer time elapsed:" << time.elapsed() << "ms";
+    qDebug() << "Писатель завершил свою работу. Время записи:" << time.elapsed() << "мс";
 
     emit dataHasBeenWritten();
 }
