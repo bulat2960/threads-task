@@ -1,11 +1,12 @@
 #include "writer.h"
 
-Writer::Writer(QString output, QObject *parent) : QObject(parent)
+Writer::Writer(QByteArray array, QString output, QObject *parent) : QObject(parent)
 {
     this->file = new QFile(output);
+    this->array = array;
 }
 
-void Writer::write(QByteArray array)
+void Writer::write()
 {
     qDebug() << "Writer starts to write!";
 

@@ -7,13 +7,15 @@ Controller::Controller(int threadsNumber, QObject *parent) : QObject(parent)
         readerThreads.append(new QThread(this));
     }
     writerThread = new QThread(this);
+
+    hasPermissionForRead = true;
 }
 
 void Controller::createReaderThread(Reader *r)
 {
     QThread* readerThread = findFreeReaderThread();
 
-    if (readerThread != nullptr)
+    if (readerThread != nullptr && hasPermissionForRead)
     {
         qDebug() << "Для ридера" << r->getReaderNumber() << "найден поток!";
 
@@ -23,25 +25,65 @@ void Controller::createReaderThread(Reader *r)
         connect(r, &Reader::resultReady, this, &Controller::processNewReader);
         connect(r, &Reader::resultReady, readerThread, &QThread::quit);
 
-        readerThreads.push_back(readerThread);
-
         readerThread->start();
     }
     else
     {
         qDebug() << "Ридер" << r->getReaderNumber() << "помещен в очередь ожидания";
-
-        waitReaders.append(r);
+        waitReaders.enqueue(r);
     }
 }
 
-void Controller::createWriterThread(Writer *w)
+void Controller::waitForReadersFinished()
 {
-    /*QThread* newWriter = new QThread(this);
-    w->moveToThread(newWriter);
-    connect(this, &Controller::begin, w, &Writer::write);
-    newWriter->start();
-    writer = newWriter;*/
+    for (QThread* readerThread : readerThreads)
+    {
+        readerThread->disconnect();
+    }
+
+    while (true)
+    {
+        for (QThread* readerThread : readerThreads)
+        {
+            if (readerThread->isRunning())
+            {
+                continue;
+            }
+        }
+
+        break;
+    }
+}
+
+void Controller::createWriterThread()
+{
+    if (writerThread->isRunning())
+    {
+        return;
+    }
+
+    hasPermissionForRead = false;
+
+    waitForReadersFinished();
+
+    QString input("/home/bulat2960/dev/my-qt-projects/ThreadsTask/input.mp4");
+    QString output("/home/bulat2960/dev/my-qt-projects/ThreadsTask/output.mp4");
+
+    Reader* reader = new Reader(input, 0);
+    reader->read();
+    QByteArray data = reader->getData();
+    reader->deleteLater();
+
+    Writer* w = new Writer(data, output);
+
+    writerThread->disconnect();
+    connect(writerThread, &QThread::started, w, &Writer::write);
+    connect(w, &Writer::dataHasBeenWritten, writerThread, &QThread::quit);
+    connect(w, &Writer::dataHasBeenWritten, this, &Controller::processWaitReaders);
+    connect(w, &Writer::dataHasBeenWritten, w, &Writer::deleteLater);
+
+    w->moveToThread(writerThread);
+    writerThread->start();
 }
 
 QThread* Controller::findFreeReaderThread()
@@ -56,6 +98,40 @@ QThread* Controller::findFreeReaderThread()
     return nullptr;
 }
 
+void Controller::processWaitReaders()
+{
+    hasPermissionForRead = true;
+
+    if (waitReaders.empty())
+    {
+        return;
+    }
+
+    while (true)
+    {
+        QThread* readerThread = findFreeReaderThread();
+
+        if (readerThread == nullptr)
+        {
+            break;
+        }
+
+        readerThread->disconnect();
+
+        Reader* r = waitReaders.dequeue();
+
+        qDebug() << "Начинается работа ридера" << r->getReaderNumber();
+
+        r->moveToThread(readerThread);
+
+        connect(readerThread, &QThread::started, r, &Reader::read);
+        connect(r, &Reader::resultReady, this, &Controller::processNewReader);
+        connect(r, &Reader::resultReady, readerThread, &QThread::quit);
+
+        readerThread->start();
+    }
+}
+
 void Controller::processNewReader()
 {
     QObject* sender = QObject::sender();
@@ -63,9 +139,11 @@ void Controller::processNewReader()
 
     qDebug() << "Ридер" << readerObject->getReaderNumber() << "завершил свою работу";
 
+    readerObject->deleteLater();
 
     if (waitReaders.empty())
     {
+        qDebug() << "Список ожидания пуст";
         return;
     }
 
@@ -73,6 +151,13 @@ void Controller::processNewReader()
 
     if (readerThread == nullptr)
     {
+        qDebug() << "Нет свободных потоков";
+        return;
+    }
+
+    if (!hasPermissionForRead)
+    {
+        qDebug() << "Нет прав доступа на чтение";
         return;
     }
 

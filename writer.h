@@ -12,9 +12,10 @@ class Writer : public QObject
     Q_OBJECT
 private:
     QFile* file;
+    QByteArray array;
 public:
-    Writer(QString output, QObject* parent = nullptr);
-    void write(QByteArray array);
+    Writer(QByteArray array, QString output, QObject* parent = nullptr);
+    void write();
     ~Writer();
 signals:
     void dataHasBeenWritten();
