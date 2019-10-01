@@ -33,7 +33,6 @@ void Controller::createReaderThread(Reader *r)
     }
     else
     {
-        qDebug() << "Ридер" << r->getReaderNumber() << "помещен в очередь ожидания";
         waitReaders.enqueue(r);
     }
 }
